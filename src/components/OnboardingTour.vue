@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { playTapSound, playSuccessChime } from '../services/audioHaptic';
-import { QrCode, CheckCircle2, Camera, Award, ChevronRight, X } from 'lucide-vue-next';
+import { ClipboardList, CheckCircle2, Camera, Award, ChevronRight, X } from 'lucide-vue-next';
 
 const emit = defineEmits<{
   (e: 'close'): void;
@@ -11,11 +11,11 @@ const currentStep = ref(0);
 
 const steps = [
   {
-    title: '1. Scan QR Code Area',
-    subtitle: 'Kunci Masuk Checklist Area',
-    icon: QrCode,
+    title: '1. Check-In & Langsung Pilih Area',
+    subtitle: 'Mudah Tanpa Perlu Scan QR',
+    icon: ClipboardList,
     color: 'emerald',
-    description: 'Setiap area (Parkir, FO BTS, FO BOffice, Coworking, Coffee Station, Shower, Toilet) dilengkapi stiker QR fisik. Scan QR untuk membuka checklist area tersebut.'
+    description: 'Cukup tekan tombol Check-In saat mulai shift. Timer kerja otomatis berjalan. Untuk mengisi checklist, langsung ketuk nama area tanpa perlu repot scan QR.'
   },
   {
     title: '2. Isi Berbasis Pengecualian',

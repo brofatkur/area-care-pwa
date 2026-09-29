@@ -12,6 +12,18 @@ export interface User {
 
 export type CheckpointSlot = '07.00' | '10.00' | '13.00' | '15.30';
 
+export type ShiftStatus = 'not_started' | 'working' | 'on_break' | 'completed';
+
+export interface ShiftAttendance {
+  date: string;
+  check_in_time?: string;
+  check_out_time?: string;
+  status: ShiftStatus;
+  started_timestamp?: number;
+  break_start_timestamp?: number;
+  total_break_seconds: number;
+}
+
 export type RatingScore = 2 | 1 | 0 | 'NA';
 
 export type SupplyStatus = 'Cukup' | 'Menipis' | 'Habis';

@@ -16,7 +16,6 @@ import { playSuccessChime, triggerHaptic } from './services/audioHaptic';
 
 import Navbar from './components/Navbar.vue';
 import BottomNav from './components/BottomNav.vue';
-import QRScannerModal from './components/QRScannerModal.vue';
 import SubstituteModal from './components/SubstituteModal.vue';
 import OnboardingTour from './components/OnboardingTour.vue';
 
@@ -60,8 +59,6 @@ const gamification = ref({
 // Modals and subviews
 const inspectingArea = ref<Area | null>(null);
 const submittingSlot = ref<CheckpointSlot | null>(null);
-const showQRModal = ref(false);
-const pendingTargetArea = ref<Area | null>(null);
 const showSubstituteModal = ref(false);
 const showTour = ref(false);
 
@@ -219,29 +216,12 @@ const handleStartCheckpoint = (slot: CheckpointSlot) => {
 };
 
 const handleOpenArea = (area: Area) => {
-  // Check if QR already scanned for this area in this slot
-  const record = checkpoints.value[currentSlot.value];
-  const areaRes = record?.area_results[area.id];
-  if (areaRes && areaRes.scanned_at) {
-    inspectingArea.value = area;
-  } else {
-    // Must scan QR first per PRD rule F-03
-    pendingTargetArea.value = area;
-    showQRModal.value = true;
-  }
-};
-
-const onQRScanned = (areaId: string, manualReason?: string) => {
-  showQRModal.value = false;
-  const target = areas.value.find(a => a.id === areaId) || areas.value[0];
-
-  // Initialize or update area record
   if (!checkpoints.value[currentSlot.value]) {
     handleStartCheckpoint(currentSlot.value);
   }
   const record = checkpoints.value[currentSlot.value];
-  if (!record.area_results[target.id]) {
-    record.area_results[target.id] = {
+  if (!record.area_results[area.id]) {
+    record.area_results[area.id] = {
       scanned_at: new Date().toISOString(),
       is_ready: true,
       score: 100,
@@ -249,16 +229,8 @@ const onQRScanned = (areaId: string, manualReason?: string) => {
       item_notes: {},
       item_photos: {}
     };
-  } else {
-    record.area_results[target.id].scanned_at = new Date().toISOString();
   }
-
-  if (manualReason) {
-    record.area_results[target.id].item_notes['manual_unlock'] = `Manual unlock oleh supervisor: ${manualReason}`;
-  }
-
-  saveLocalCheckpoint(record);
-  inspectingArea.value = target;
+  inspectingArea.value = area;
 };
 
 const onSaveArea = async (data: {
@@ -470,16 +442,6 @@ const handleUpdateFinding = async (f: Finding) => {
       :role="currentUser.role"
       :open-findings-count="findings.filter(f => f.status !== 'Selesai').length"
       @change-tab="(tab) => activeTab = tab"
-    />
-
-    <!-- QR Code Scanner Modal -->
-    <QRScannerModal
-      v-if="showQRModal"
-      :target-area="pendingTargetArea"
-      :all-areas="areas"
-      :is-supervisor="currentUser.role !== 'officer'"
-      @close="showQRModal = false"
-      @scanned="onQRScanned"
     />
 
     <!-- Substitute Officer Modal -->

@@ -143,3 +143,19 @@ export async function getLocalGamification(): Promise<any> {
 export async function saveLocalGamification(state: any): Promise<void> {
   await set(GAMIFICATION_KEY, state);
 }
+
+const ATTENDANCE_KEY = 'area_care_shift_attendance';
+
+export async function getLocalAttendance(): Promise<any> {
+  return (await get(ATTENDANCE_KEY)) || {
+    date: '2026-09-29',
+    status: 'working',
+    check_in_time: '06:55 WITA',
+    started_timestamp: Date.now() - 3600 * 1000 * 3.5, // 3.5 hours ago for immediate realistic timer demo
+    total_break_seconds: 0
+  };
+}
+
+export async function saveLocalAttendance(att: any): Promise<void> {
+  await set(ATTENDANCE_KEY, att);
+}
