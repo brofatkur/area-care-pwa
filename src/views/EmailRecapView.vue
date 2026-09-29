@@ -70,24 +70,24 @@ const exportCsv = () => {
 <template>
   <div class="space-y-4 max-w-4xl mx-auto pb-28">
     <!-- Top Action Ribbon -->
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div class="bg-white border border-slate-200 rounded-3xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-slate-900">
       <div class="flex items-center gap-3">
         <button
           @click="emit('back')"
-          class="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700"
+          class="flex items-center gap-1.5 text-xs text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl border border-slate-300 font-bold active:scale-95 transition"
         >
           <ArrowLeft class="w-4 h-4" /> Kembali
         </button>
         <div>
-          <h2 class="text-base font-black text-white">Generator Rekap Email & Dokumen</h2>
-          <p class="text-xs text-slate-400">Penerima Resmi: Bagus (Direktur) & Pasek (Manajer)</p>
+          <h2 class="text-base font-black text-slate-900">Generator Rekap Email & Dokumen</h2>
+          <p class="text-xs text-slate-500 font-medium">Penerima Resmi: Bagus (Direktur) & Pasek (Supervisor)</p>
         </div>
       </div>
 
       <div class="flex items-center gap-2">
         <button
           @click="printPdf"
-          class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition"
+          class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 border border-slate-300 transition"
         >
           <Printer class="w-3.5 h-3.5" />
           <span>Cetak PDF</span>
@@ -95,7 +95,7 @@ const exportCsv = () => {
 
         <button
           @click="exportCsv"
-          class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition"
+          class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 border border-slate-300 transition"
         >
           <FileSpreadsheet class="w-3.5 h-3.5" />
           <span>Ekspor CSV</span>
@@ -103,7 +103,7 @@ const exportCsv = () => {
 
         <button
           @click="sendSimulatedEmail"
-          class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-purple-600/20 transition"
+          class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-black flex items-center gap-1.5 shadow-md shadow-purple-600/20 transition active:scale-95"
         >
           <Send class="w-3.5 h-3.5" />
           <span>Kirim Sekarang</span>
@@ -112,19 +112,19 @@ const exportCsv = () => {
     </div>
 
     <!-- Feedback alert if email triggered -->
-    <div v-if="emailSentNotice" class="p-3 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl text-xs text-emerald-300 flex items-center justify-between animate-in fade-in">
+    <div v-if="emailSentNotice" class="p-3 bg-emerald-50 border border-emerald-300 rounded-2xl text-xs text-emerald-900 flex items-center justify-between font-bold animate-in fade-in">
       <div class="flex items-center gap-2">
-        <CheckCircle2 class="w-4 h-4 text-emerald-400" />
+        <CheckCircle2 class="w-4 h-4 text-emerald-600" />
         <span>Email simulasi berhasil diteruskan ke baguszputro@gmail.com dan teamptasa@gmail.com</span>
       </div>
     </div>
 
     <!-- Email Tab Selector -->
-    <div class="flex gap-1.5 bg-slate-900 border border-slate-800 p-1.5 rounded-2xl text-xs font-bold">
+    <div class="flex gap-1.5 bg-slate-100 border border-slate-200 p-1.5 rounded-2xl text-xs font-bold">
       <button
         @click="activeTab = 'kinerja'"
         class="flex-1 py-2 rounded-xl transition"
-        :class="activeTab === 'kinerja' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+        :class="activeTab === 'kinerja' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'"
       >
         Rekap Kinerja Harian (16.30 WITA)
       </button>
@@ -132,7 +132,7 @@ const exportCsv = () => {
       <button
         @click="activeTab = 'pekerjaan'"
         class="flex-1 py-2 rounded-xl transition"
-        :class="activeTab === 'pekerjaan' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+        :class="activeTab === 'pekerjaan' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'"
       >
         Rekap Pekerjaan Harian (+Foto)
       </button>
@@ -140,7 +140,7 @@ const exportCsv = () => {
       <button
         @click="activeTab = 'bulanan'"
         class="flex-1 py-2 rounded-xl transition"
-        :class="activeTab === 'bulanan' ? 'bg-purple-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+        :class="activeTab === 'bulanan' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'"
       >
         Rekap Bulanan (Tgl 1)
       </button>

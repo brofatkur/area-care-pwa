@@ -46,24 +46,24 @@ onMounted(() => {
 <template>
   <div class="space-y-4 max-w-4xl mx-auto pb-28">
     <!-- Header -->
-    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-lg flex items-center justify-between">
+    <div class="bg-white border border-slate-200 rounded-3xl p-4 shadow-sm flex items-center justify-between text-slate-900">
       <div class="flex items-center gap-3">
         <button
           @click="emit('back')"
-          class="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700"
+          class="flex items-center gap-1.5 text-xs text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl border border-slate-300 font-bold active:scale-95 transition"
         >
           <ArrowLeft class="w-4 h-4" /> Kembali
         </button>
         <div>
-          <h2 class="text-base font-black text-white">Master Data & Cetak QR Code</h2>
-          <p class="text-xs text-slate-400">7 Area · 27 Sub-Bagian · 315 Item Checklist</p>
+          <h2 class="text-base font-black text-slate-900">Master Data & Cetak QR Code</h2>
+          <p class="text-xs text-slate-500 font-medium">7 Area · 27 Sub-Bagian · 315 Item Checklist</p>
         </div>
       </div>
 
       <div class="flex items-center gap-2">
         <button
           @click="printQRCodes"
-          class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 transition"
+          class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition active:scale-95"
         >
           <Printer class="w-3.5 h-3.5" />
           <span>Cetak Lembar Stiker QR</span>
@@ -72,11 +72,11 @@ onMounted(() => {
     </div>
 
     <!-- Tab Selector -->
-    <div class="flex gap-2 bg-slate-900 border border-slate-800 p-1.5 rounded-2xl text-xs font-bold">
+    <div class="flex gap-2 bg-slate-100 border border-slate-200 p-1.5 rounded-2xl text-xs font-bold">
       <button
         @click="activeTab = 'qr'"
         class="flex-1 py-2 rounded-xl transition flex items-center justify-center gap-2"
-        :class="activeTab === 'qr' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+        :class="activeTab === 'qr' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'"
       >
         <QrCode class="w-4 h-4" />
         <span>Lembar Stiker QR Fisik (7 Area)</span>
@@ -85,7 +85,7 @@ onMounted(() => {
       <button
         @click="activeTab = 'items'"
         class="flex-1 py-2 rounded-xl transition flex items-center justify-center gap-2"
-        :class="activeTab === 'items' ? 'bg-emerald-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+        :class="activeTab === 'items' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'"
       >
         <Database class="w-4 h-4" />
         <span>Katalog 315 Item Checklist</span>

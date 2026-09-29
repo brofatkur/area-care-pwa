@@ -104,33 +104,33 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-md p-5 shadow-2xl flex flex-col animate-in fade-in zoom-in-95">
+  <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-3xl w-full max-w-md p-5 shadow-2xl flex flex-col animate-in fade-in zoom-in-95 text-slate-900">
       <!-- Header -->
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2.5">
-          <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+          <div class="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shadow-xs">
             <PenTool class="w-5 h-5" />
           </div>
           <div>
-            <h3 class="font-bold text-white text-base leading-tight">{{ title }}</h3>
-            <p class="text-xs text-slate-400">{{ signerName }} · {{ roleDescription }}</p>
+            <h3 class="font-black text-slate-900 text-base leading-tight">{{ title }}</h3>
+            <p class="text-xs text-slate-500 font-medium">{{ signerName }} · {{ roleDescription }}</p>
           </div>
         </div>
         <button
           @click="emit('close')"
-          class="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white"
+          class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800"
         >
           <X class="w-5 h-5" />
         </button>
       </div>
 
-      <p class="text-xs text-slate-300 mb-3 bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/60">
+      <p class="text-xs text-slate-600 mb-3 bg-slate-50 p-3 rounded-2xl border border-slate-200 font-medium leading-relaxed">
         Bubuhkan paraf pada area di bawah menggunakan jari atau stylus. Paraf ini mewakili keabsahan pemeriksaan fisik dan komitmen standar Ready-to-Use.
       </p>
 
       <!-- Signature Canvas Box -->
-      <div class="relative bg-slate-950 border-2 border-dashed border-slate-700 rounded-2xl h-48 w-full overflow-hidden touch-none mb-3">
+      <div class="relative bg-white border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl h-48 w-full overflow-hidden touch-none mb-3 shadow-inner">
         <canvas
           ref="canvasRef"
           @mousedown="startDrawing"
@@ -145,13 +145,13 @@ onMounted(() => {
 
         <div
           v-if="!hasSignature"
-          class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center text-slate-600"
+          class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center text-slate-400"
         >
-          <PenTool class="w-8 h-8 mb-1.5 opacity-40" />
-          <span class="text-xs font-medium">Tanda tangan / paraf di sini</span>
+          <PenTool class="w-8 h-8 mb-1.5 opacity-40 text-slate-400" />
+          <span class="text-xs font-bold text-slate-500">Tanda tangan / paraf di sini</span>
         </div>
 
-        <div class="absolute bottom-2 right-3 text-[10px] text-slate-600 font-mono pointer-events-none">
+        <div class="absolute bottom-2 right-3 text-[10px] text-slate-400 font-mono font-bold pointer-events-none">
           TIMESTAMP VALIDATED
         </div>
       </div>
@@ -160,13 +160,13 @@ onMounted(() => {
       <div class="flex gap-2.5">
         <button
           @click="clearCanvas"
-          class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs flex items-center gap-1.5 transition"
+          class="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition border border-slate-300"
         >
           <RotateCcw class="w-4 h-4" /> Bersihkan
         </button>
         <button
           @click="saveSignature"
-          class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition"
+          class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 active:scale-95 transition"
         >
           <Check class="w-4 h-4" /> Simpan & Paraf
         </button>

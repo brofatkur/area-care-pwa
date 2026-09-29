@@ -115,13 +115,13 @@ const markResolved = (f: Finding) => {
     <!-- Header with Action -->
     <div class="flex items-center justify-between">
       <div>
-        <h2 class="text-lg font-black text-white">Temuan & Tiket Fasilitas</h2>
-        <p class="text-xs text-slate-400">Pencatatan Masalah & SLA 48 Jam</p>
+        <h2 class="text-lg font-black text-slate-900">Temuan & Tiket Fasilitas</h2>
+        <p class="text-xs text-slate-500 font-medium">Pencatatan Masalah & SLA 48 Jam</p>
       </div>
 
       <button
         @click="showNewModal = true"
-        class="h-10 px-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-500/20 active:scale-95 transition"
+        class="h-10 px-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-emerald-600/20 active:scale-95 transition"
       >
         <Plus class="w-4 h-4" />
         <span>Catat Temuan</span>
@@ -135,7 +135,7 @@ const markResolved = (f: Finding) => {
         :key="st"
         @click="filterStatus = st"
         class="px-3 py-1.5 rounded-xl font-bold transition border"
-        :class="filterStatus === st ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800'"
+        :class="filterStatus === st ? 'bg-emerald-100 text-emerald-900 border-emerald-300 shadow-xs' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'"
       >
         {{ st }}
       </button>
@@ -146,7 +146,7 @@ const markResolved = (f: Finding) => {
       <div
         v-for="finding in filteredFindings()"
         :key="finding.id"
-        class="bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-sm relative overflow-hidden"
+        class="bg-white border border-slate-200 rounded-3xl p-4 sm:p-5 shadow-sm relative overflow-hidden text-slate-800"
       >
         <!-- Top Status Row -->
         <div class="flex items-center justify-between mb-2">
@@ -155,63 +155,63 @@ const markResolved = (f: Finding) => {
               class="text-[9px] font-black px-2 py-0.5 rounded-md uppercase"
               :class="
                 finding.status === 'Selesai'
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                   : finding.status === 'Diteruskan'
-                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                  ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                  : 'bg-amber-100 text-amber-800 border border-amber-200'
               "
             >
               {{ finding.status }}
             </span>
-            <span class="text-[10px] font-medium text-slate-400 font-mono">{{ finding.area_name }}</span>
+            <span class="text-[10px] font-bold text-slate-500 font-mono">{{ finding.area_name }}</span>
           </div>
 
           <span
-            class="text-[9px] px-1.5 py-0.2 rounded font-semibold"
-            :class="finding.finding_type === 'Teknis-berisiko' ? 'bg-purple-900/40 text-purple-300' : 'bg-slate-800 text-slate-400'"
+            class="text-[9px] px-2 py-0.5 rounded font-bold"
+            :class="finding.finding_type === 'Teknis-berisiko' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-slate-100 text-slate-600 border border-slate-200'"
           >
             {{ finding.finding_type }}
           </span>
         </div>
 
-        <h4 class="font-bold text-sm text-white leading-snug mb-1">{{ finding.item_name }}</h4>
-        <p class="text-xs text-slate-300 leading-relaxed mb-2.5">{{ finding.description }}</p>
+        <h4 class="font-black text-sm text-slate-900 leading-snug mb-1">{{ finding.item_name }}</h4>
+        <p class="text-xs text-slate-600 leading-relaxed mb-2.5 font-medium">{{ finding.description }}</p>
 
         <!-- Action / Resolution note -->
-        <div v-if="finding.action_taken" class="p-2.5 bg-slate-950/70 border border-slate-800/80 rounded-xl text-xs text-slate-300 mb-2.5">
-          <span class="font-semibold text-emerald-400">Tindakan: </span>
+        <div v-if="finding.action_taken" class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 mb-2.5 font-medium">
+          <span class="font-bold text-emerald-700">Tindakan: </span>
           <span>{{ finding.action_taken }}</span>
         </div>
 
         <!-- Before / After Photos if any -->
         <div v-if="finding.photo_before || finding.photo_after" class="grid grid-cols-2 gap-2 mb-3">
-          <div v-if="finding.photo_before" class="relative rounded-xl overflow-hidden border border-slate-800">
+          <div v-if="finding.photo_before" class="relative rounded-xl overflow-hidden border border-slate-200">
             <img :src="finding.photo_before" alt="Sebelum" class="w-full h-24 object-cover" />
-            <span class="absolute bottom-1 left-1.5 px-1.5 py-0.2 rounded bg-black/70 text-[9px] font-mono text-rose-300">
+            <span class="absolute bottom-1 left-1.5 px-1.5 py-0.2 rounded bg-black/70 text-[9px] font-mono font-bold text-rose-300">
               SEBELUM
             </span>
           </div>
-          <div v-if="finding.photo_after" class="relative rounded-xl overflow-hidden border border-slate-800">
+          <div v-if="finding.photo_after" class="relative rounded-xl overflow-hidden border border-slate-200">
             <img :src="finding.photo_after" alt="Sesudah" class="w-full h-24 object-cover" />
-            <span class="absolute bottom-1 left-1.5 px-1.5 py-0.2 rounded bg-black/70 text-[9px] font-mono text-emerald-300">
+            <span class="absolute bottom-1 left-1.5 px-1.5 py-0.2 rounded bg-black/70 text-[9px] font-mono font-bold text-emerald-300">
               SESUDAH
             </span>
           </div>
         </div>
 
         <!-- Footer details & Resolve Button -->
-        <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-          <div class="flex items-center gap-1.5">
-            <Clock class="w-3.5 h-3.5 text-slate-500" />
-            <span>PIC: {{ finding.pic }}</span>
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+          <div class="flex items-center gap-1.5 font-medium">
+            <Clock class="w-3.5 h-3.5 text-slate-400" />
+            <span>PIC: <strong class="text-slate-700">{{ finding.pic }}</strong></span>
           </div>
 
           <button
             v-if="finding.status !== 'Selesai'"
             @click="markResolved(finding)"
-            class="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 font-bold text-[10px] flex items-center gap-1"
+            class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 font-bold text-[10px] flex items-center gap-1 transition shadow-xs"
           >
-            <Check class="w-3 h-3" />
+            <Check class="w-3 h-3 text-emerald-700" />
             <span>Tandai Selesai</span>
           </button>
         </div>
@@ -219,17 +219,17 @@ const markResolved = (f: Finding) => {
     </div>
 
     <!-- Modal Form Catat Temuan Baru -->
-    <div v-if="showNewModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-      <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-md p-5 shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto">
+    <div v-if="showNewModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white border border-slate-200 rounded-3xl w-full max-w-md p-5 shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto text-slate-900">
         <!-- Header -->
         <div class="flex items-center justify-between mb-3">
           <div>
-            <h3 class="font-bold text-white text-base">Catat Temuan Masalah</h3>
-            <p class="text-xs text-slate-400">Otomatis Terjadwal Tiket SLA</p>
+            <h3 class="font-black text-slate-900 text-base">Catat Temuan Masalah</h3>
+            <p class="text-xs text-slate-500 font-medium">Otomatis Terjadwal Tiket SLA</p>
           </div>
           <button
             @click="showNewModal = false"
-            class="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white"
+            class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800"
           >
             <X class="w-5 h-5" />
           </button>
@@ -237,43 +237,43 @@ const markResolved = (f: Finding) => {
 
         <div class="space-y-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Lokasi Area *</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Lokasi Area *</label>
             <select
               v-model="selectedAreaId"
-              class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-emerald-600 focus:bg-white"
             >
               <option v-for="a in areas" :key="a.id" :value="a.id">{{ a.name }}</option>
             </select>
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Item / Fasilitas Yang Bermasalah *</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Item / Fasilitas Yang Bermasalah *</label>
             <input
               v-model="itemName"
               type="text"
               placeholder="mis. Kran wastafel bocor, lampu mati, AC kurang dingin"
-              class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600 focus:bg-white"
             />
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Deskripsi Kondisi *</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Deskripsi Kondisi *</label>
             <textarea
               v-model="description"
               rows="2"
               placeholder="Jelaskan kondisi detail temuan..."
-              class="w-full px-3.5 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              class="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600 focus:bg-white"
             ></textarea>
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Jenis Temuan</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Jenis Temuan</label>
             <div class="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 @click="findingType = 'Perbaiki langsung'"
                 class="py-2.5 px-3 rounded-xl border text-xs font-bold transition"
-                :class="findingType === 'Perbaiki langsung' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-400'"
+                :class="findingType === 'Perbaiki langsung' ? 'bg-emerald-100 border-emerald-400 text-emerald-900 shadow-xs' : 'bg-slate-50 border-slate-200 text-slate-600'"
               >
                 ✓ Perbaiki Langsung
               </button>
@@ -281,7 +281,7 @@ const markResolved = (f: Finding) => {
                 type="button"
                 @click="findingType = 'Teknis-berisiko'"
                 class="py-2.5 px-3 rounded-xl border text-xs font-bold transition"
-                :class="findingType === 'Teknis-berisiko' ? 'bg-purple-500/20 border-purple-500 text-purple-300' : 'bg-slate-950 border-slate-800 text-slate-400'"
+                :class="findingType === 'Teknis-berisiko' ? 'bg-purple-100 border-purple-400 text-purple-900 shadow-xs' : 'bg-slate-50 border-slate-200 text-slate-600'"
               >
                 ⚠️ Teknis / Berisiko (SLA 48h)
               </button>
@@ -289,12 +289,12 @@ const markResolved = (f: Finding) => {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Tindakan Yang Telah / Akan Dilakukan</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Tindakan Yang Telah / Akan Dilakukan</label>
             <input
               v-model="actionTaken"
               type="text"
               placeholder="mis. Langsung dipel / Diteruskan ke teknisi AC"
-              class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-600 focus:bg-white"
             />
           </div>
 
@@ -303,8 +303,8 @@ const markResolved = (f: Finding) => {
             <button
               type="button"
               @click="cameraTarget = 'before'; showCamera = true"
-              class="py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5"
-              :class="photoBefore ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'"
+              class="py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition"
+              :class="photoBefore ? 'bg-emerald-100 border-emerald-300 text-emerald-800' : 'bg-slate-50 border-slate-300 text-slate-700 hover:bg-slate-100'"
             >
               <Camera class="w-3.5 h-3.5" />
               <span>{{ photoBefore ? '✓ Foto Sebelum' : '+ Foto Sebelum' }}</span>
@@ -313,8 +313,8 @@ const markResolved = (f: Finding) => {
             <button
               type="button"
               @click="cameraTarget = 'after'; showCamera = true"
-              class="py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5"
-              :class="photoAfter ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-300'"
+              class="py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition"
+              :class="photoAfter ? 'bg-emerald-100 border-emerald-300 text-emerald-800' : 'bg-slate-50 border-slate-300 text-slate-700 hover:bg-slate-100'"
             >
               <Camera class="w-3.5 h-3.5" />
               <span>{{ photoAfter ? '✓ Foto Sesudah' : '+ Foto Sesudah' }}</span>
@@ -322,16 +322,16 @@ const markResolved = (f: Finding) => {
           </div>
         </div>
 
-        <div class="flex gap-2 mt-4 pt-2 border-t border-slate-800">
+        <div class="flex gap-2 mt-4 pt-3 border-t border-slate-100">
           <button
             @click="showNewModal = false"
-            class="flex-1 py-3 rounded-xl bg-slate-800 text-slate-300 font-semibold text-xs hover:bg-slate-700"
+            class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200"
           >
             Batal
           </button>
           <button
             @click="submitNewFinding"
-            class="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/20"
+            class="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20"
           >
             <Check class="w-4 h-4" /> Simpan Temuan
           </button>
