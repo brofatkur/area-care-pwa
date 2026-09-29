@@ -6,7 +6,6 @@ import CameraModal from '../components/CameraModal.vue';
 import {
   ChevronDown,
   ChevronUp,
-  CheckCircle2,
   Camera,
   AlertTriangle,
   FileText,
@@ -106,16 +105,6 @@ const markItemIssue = (itemId: string) => {
     cameraModalMode.value = 'before';
     showCamera.value = true;
   }
-};
-
-// Centang Semua Selesai dalam satu sub-bagian (hemat waktu)
-const markSectionAllChecked = (section: any) => {
-  playSuccessChime();
-  triggerHaptic('medium');
-  const items = getSectionItems(section);
-  items.forEach(item => {
-    ratings.value[item.id] = 2;
-  });
 };
 
 // Supply status updater for replenishment items (Coffee, Tea, Toilet Paper, etc.)
@@ -313,11 +302,11 @@ const handleSaveArea = () => {
         :key="section.id"
         class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs"
       >
-        <!-- Section Header with "Centang Semua Selesai" button -->
-        <div class="p-3.5 bg-slate-50/90 border-b border-slate-200 flex items-center justify-between gap-2">
+        <!-- Section Header -->
+        <div class="p-3.5 bg-slate-50/90 border-b border-slate-200">
           <button
             @click="collapsedSections[section.id] = !collapsedSections[section.id]"
-            class="flex items-center gap-2 text-left flex-1"
+            class="flex items-center gap-2 text-left w-full"
           >
             <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-800 font-black text-xs flex items-center justify-center shrink-0 border border-blue-200">
               {{ section.code }}
@@ -330,16 +319,6 @@ const handleSaveArea = () => {
               :is="collapsedSections[section.id] ? ChevronDown : ChevronUp"
               class="w-4 h-4 text-slate-400 ml-auto shrink-0"
             />
-          </button>
-
-          <!-- 1-Tap "Centang Semua Selesai" Button -->
-          <button
-            @click.stop="markSectionAllChecked(section)"
-            class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-[11px] font-black flex items-center gap-1 shrink-0 transition active:scale-95 shadow-xs"
-            title="Tandai semua item sub-bagian ini sudah selesai dikerjakan"
-          >
-            <CheckCircle2 class="w-3.5 h-3.5 text-emerald-600" />
-            <span>Centang Semua</span>
           </button>
         </div>
 
