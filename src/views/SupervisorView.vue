@@ -93,7 +93,7 @@ const handleSaveReview = (status: 'Approved' | 'Revision Requested') => {
     <div class="flex items-center justify-between">
       <div>
         <h2 class="text-lg font-black text-white">Review & Spot-Check Supervisor</h2>
-        <p class="text-xs text-slate-400">Pemeriksaan Live 7 Area & Verifikasi Paraf</p>
+        <p class="text-xs text-slate-400">Pemeriksa: <span class="text-blue-400 font-semibold">{{ supervisor.name }}</span> · Petugas Lapangan: <span class="text-emerald-400 font-semibold">Hendi</span></p>
       </div>
 
       <div class="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
@@ -200,7 +200,7 @@ const handleSaveReview = (status: 'Approved' | 'Revision Requested') => {
 
     <!-- Supervisor Review & Paraf Form -->
     <div class="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-sm space-y-3">
-      <h4 class="text-xs font-bold text-white uppercase tracking-wider">Catatan & Pengesahan Supervisor</h4>
+      <h4 class="text-xs font-bold text-white uppercase tracking-wider">Catatan & Paraf Pengesahan ({{ supervisor.name }})</h4>
 
       <textarea
         v-model="supervisorNotes"
@@ -222,7 +222,7 @@ const handleSaveReview = (status: 'Approved' | 'Revision Requested') => {
         />
         <div v-else class="text-slate-500 flex flex-col items-center gap-1">
           <PenTool class="w-5 h-5 text-slate-600" />
-          <span class="text-xs font-medium">Ketuk untuk membubuhkan paraf supervisor</span>
+          <span class="text-xs font-medium">Ketuk untuk membubuhkan paraf supervisor ({{ supervisor.name }})</span>
         </div>
       </div>
 

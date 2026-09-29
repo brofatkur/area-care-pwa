@@ -218,7 +218,7 @@ const handleSubmitFinal = () => {
           class="w-full h-14 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/30 active:scale-95 transition"
         >
           <Send class="w-5 h-5" />
-          <span>{{ officerSignature ? 'KIRIM CHECKPOINT KE SUPERVISOR' : 'BUBUHKAN PARAF & KIRIM' }}</span>
+          <span>{{ officerSignature ? 'KIRIM CHECKPOINT KE SUPERVISOR (PASEK)' : 'BUBUHKAN PARAF & KIRIM KE PASEK' }}</span>
         </button>
       </div>
     </div>

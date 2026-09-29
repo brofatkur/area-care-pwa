@@ -25,12 +25,36 @@ const availableUsers: Array<{ user: User; isSub?: boolean; desc: string }> = [
       id: 'usr_hendi',
       name: 'Hendi',
       role: 'officer',
-      title: 'Area Care Officer Utama',
+      title: 'Petugas Area Care (Eksekutor)',
       origin_team: 'Facility & Care Team',
       phone: '081234567890',
       pin: '123456'
     },
-    desc: 'Petugas Utama Shift 07.00 - 16.00'
+    desc: 'Eksekusi checklist & centang tugas yang sudah dikerjakan'
+  },
+  {
+    user: {
+      id: 'usr_pasek',
+      name: 'Pasek',
+      role: 'supervisor',
+      title: 'Supervisor Operasional (Pemeriksa)',
+      origin_team: 'Operations Management',
+      phone: '082222222222',
+      pin: '123456'
+    },
+    desc: 'Pemeriksa pekerjaan Hendi, spot-check, & paraf digital'
+  },
+  {
+    user: {
+      id: 'usr_bagus',
+      name: 'Bagus',
+      role: 'management',
+      title: 'Direktur',
+      origin_team: 'Board of Directors',
+      phone: '081111111111',
+      pin: '123456'
+    },
+    desc: 'Dashboard eksekutif & monitoring KPI'
   },
   {
     user: {
@@ -43,43 +67,7 @@ const availableUsers: Array<{ user: User; isSub?: boolean; desc: string }> = [
       pin: '123456'
     },
     isSub: true,
-    desc: 'Pengganti dari tim lain'
-  },
-  {
-    user: {
-      id: 'usr_supervisor',
-      name: 'Supervisor Operasional',
-      role: 'supervisor',
-      title: 'Supervisor Operasional BOffice',
-      origin_team: 'Operations Management',
-      phone: '081298765432',
-      pin: '123456'
-    },
-    desc: 'Review live 7 area & spot check'
-  },
-  {
-    user: {
-      id: 'usr_bagus',
-      name: 'Bagus',
-      role: 'management',
-      title: 'Direktur',
-      origin_team: 'Board of Directors',
-      phone: '081111111111',
-      pin: '123456'
-    },
-    desc: 'Penerima email rekap & dashboard'
-  },
-  {
-    user: {
-      id: 'usr_pasek',
-      name: 'Pasek',
-      role: 'management',
-      title: 'Manajer Operasional',
-      origin_team: 'Operations Head',
-      phone: '082222222222',
-      pin: '123456'
-    },
-    desc: 'Penerima email rekap harian/bulanan'
+    desc: 'Pengganti jika Hendi berhalangan'
   }
 ];
 

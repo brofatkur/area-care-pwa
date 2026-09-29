@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { Area, ChecklistItem, RatingScore, CheckpointSlot, SupplyStatus } from '../types';
+import { Area, ChecklistItem, RatingScore, CheckpointSlot, SupplyStatus, Role } from '../types';
 import { playTapSound, playSuccessChime, triggerHaptic } from '../services/audioHaptic';
 import CameraModal from '../components/CameraModal.vue';
 import {
@@ -13,19 +13,28 @@ import {
   Sparkles,
   ArrowLeft,
   Check,
-  Package
+  Package,
+  Square,
+  CheckSquare,
+  AlertCircle
 } from 'lucide-vue-next';
 
-const props = defineProps<{
-  area: Area;
-  slot: CheckpointSlot;
-  officerName: string;
-  isFullCheck: boolean;
-  initialRatings: Record<string, RatingScore>;
-  initialNotes: Record<string, string>;
-  initialPhotos: Record<string, { before?: string; after?: string }>;
-  initialReadyPhoto?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    area: Area;
+    slot: CheckpointSlot;
+    officerName: string;
+    userRole?: Role;
+    isFullCheck: boolean;
+    initialRatings: Record<string, RatingScore>;
+    initialNotes: Record<string, string>;
+    initialPhotos: Record<string, { before?: string; after?: string }>;
+    initialReadyPhoto?: string;
+  }>(),
+  {
+    userRole: 'officer'
+  }
+);
 
 const emit = defineEmits<{
   (e: 'back'): void;
@@ -72,30 +81,41 @@ const totalVisibleItems = computed(() => {
   return props.area.sections.reduce((acc, s) => acc + getSectionItems(s).length, 0);
 });
 
-// Exception-based feature: "Semua Sesuai (2)" per section
-const markSectionAllGood = (section: any) => {
+// Toggle checklist item (Petugas Hendi cukup centang kalau sudah dikerjakan!)
+const toggleItemChecked = (itemId: string) => {
   playTapSound();
   triggerHaptic('light');
-  const items = getSectionItems(section);
-  items.forEach(item => {
-    // Only overwrite if not already marked as 0 or 1 or keep
-    ratings.value[item.id] = 2;
-  });
+  if (ratings.value[itemId] === 2) {
+    // Uncheck
+    delete ratings.value[itemId];
+  } else {
+    // Centang: Selesai dikerjakan
+    ratings.value[itemId] = 2;
+  }
 };
 
-const setItemRating = (itemId: string, score: RatingScore) => {
+// Tandai ada kendala fisik (item bermasalah / butuh perbaikan)
+const markItemIssue = (itemId: string) => {
   playTapSound();
-  triggerHaptic('light');
-  ratings.value[itemId] = score;
-
-  // PRD Rule: If marked 0 or 1, prompt for before/after photo
-  if (score === 0 || score === 1) {
-    if (!itemPhotos.value[itemId]?.before) {
-      activeCameraItemId.value = itemId;
-      cameraModalMode.value = 'before';
-      showCamera.value = true;
-    }
+  triggerHaptic('medium');
+  if (ratings.value[itemId] === 0) {
+    ratings.value[itemId] = 2; // Kembalikan ke selesai
+  } else {
+    ratings.value[itemId] = 0; // Tandai kendala
+    activeCameraItemId.value = itemId;
+    cameraModalMode.value = 'before';
+    showCamera.value = true;
   }
+};
+
+// Centang Semua Selesai dalam satu sub-bagian (hemat waktu)
+const markSectionAllChecked = (section: any) => {
+  playSuccessChime();
+  triggerHaptic('medium');
+  const items = getSectionItems(section);
+  items.forEach(item => {
+    ratings.value[item.id] = 2;
+  });
 };
 
 // Supply status updater for replenishment items (Coffee, Tea, Toilet Paper, etc.)
@@ -147,49 +167,44 @@ const handleCapturedPhoto = (data: { dataUrl: string; blob: Blob }) => {
   }
 };
 
-// Area score calculation according to PRD:
-// Skor area = sum(nilai * bobot) / sum(2 * bobot) * 100%
+// Area score calculation:
+// Persentase pekerjaan yang selesai dicentang oleh Hendi
 const areaMetrics = computed(() => {
-  let earnedScore = 0;
-  let maxPossibleScore = 0;
-  let unratedCount = 0;
-  let failedKeyItem = false;
+  let checkedCount = 0;
+  let totalItems = 0;
   let zeroCount = 0;
+  let failedKeyItem = false;
 
   props.area.sections.forEach(sec => {
     const items = getSectionItems(sec);
     items.forEach(item => {
+      totalItems++;
       const val = ratings.value[item.id];
-      if (val === undefined || val === null) {
-        unratedCount++;
-      } else if (val === 'NA') {
-        // N/A excluded from formula
-      } else {
-        earnedScore += val * item.weight;
-        maxPossibleScore += 2 * item.weight;
-        if (val === 0) zeroCount++;
-        if (item.is_key_item && val === 0) {
-          failedKeyItem = true;
-        }
+      if (val === 2) {
+        checkedCount++;
+      } else if (val === 0) {
+        zeroCount++;
+        if (item.is_key_item) failedKeyItem = true;
       }
     });
   });
 
-  const percentage = maxPossibleScore > 0 ? Math.round((earnedScore / maxPossibleScore) * 100) : 100;
+  const percentage = totalItems > 0 ? Math.round((checkedCount / totalItems) * 100) : 100;
   const isReady = !failedKeyItem && zeroCount === 0;
 
   return {
     score: percentage,
-    unratedCount,
-    failedKeyItem,
+    checkedCount,
+    totalItems,
     zeroCount,
+    failedKeyItem,
     isReady
   };
 });
 
 const handleSaveArea = () => {
   if (!readyPhotoUrl.value) {
-    alert('Wajib mengambil 1 foto kondisi "Ready to Use" untuk area ini sebelum menyimpan!');
+    alert('Wajib mengambil 1 foto kondisi "Ready to Use" sebagai bukti pekerjaan selesai!');
     openReadyPhotoCamera();
     return;
   }
@@ -215,7 +230,7 @@ const handleSaveArea = () => {
       <div class="max-w-md mx-auto flex items-center justify-between">
         <button
           @click="emit('back')"
-          class="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700"
+          class="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 active:scale-95 transition"
         >
           <ArrowLeft class="w-4 h-4" /> Kembali
         </button>
@@ -224,34 +239,47 @@ const handleSaveArea = () => {
           <div class="flex items-center gap-2 justify-end">
             <span class="text-xs font-bold text-white">{{ area.name }}</span>
             <span
-              class="text-xs font-extrabold px-2 py-0.5 rounded-md"
-              :class="areaMetrics.score >= 95 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : areaMetrics.score >= 85 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'"
+              class="text-xs font-black px-2 py-0.5 rounded-md"
+              :class="areaMetrics.score >= 95 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : areaMetrics.score >= 80 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-slate-800 text-slate-300'"
             >
-              {{ areaMetrics.score }}%
+              {{ areaMetrics.checkedCount }} / {{ areaMetrics.totalItems }} Selesai ({{ areaMetrics.score }}%)
             </span>
           </div>
           <p class="text-[10px] text-slate-400">
-            Slot {{ slot }} · {{ totalVisibleItems }} item {{ isFullCheck ? '(Pagi Lengkap)' : '(Frekuensi Rutin)' }}
+            Petugas: <span class="text-emerald-400 font-semibold">{{ officerName }}</span> · Slot {{ slot }}
           </p>
         </div>
       </div>
     </div>
 
     <div class="max-w-md mx-auto p-4 space-y-4">
+      <!-- Officer Guidance Banner -->
+      <div class="bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/25 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-md">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+            <CheckSquare class="w-5 h-5" />
+          </div>
+          <div>
+            <h4 class="text-xs font-bold text-white">Daftar Eksekusi Tugas</h4>
+            <p class="text-[11px] text-slate-300">Cukup centang tugas yang sudah Anda kerjakan di area ini.</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Ready to Use Mandatory Photo Banner -->
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg">
         <div class="flex items-start justify-between gap-3">
           <div>
             <div class="flex items-center gap-1.5 text-emerald-400 font-bold text-xs uppercase tracking-wider mb-1">
-              <Sparkles class="w-4 h-4" /> Foto Wajib "Ready to Use"
+              <Sparkles class="w-4 h-4" /> Foto Bukti Selesai "Ready to Use"
             </div>
             <p class="text-xs text-slate-300 leading-snug">
-              Foto kondisi keseluruhan area dengan watermark otomatis (waktu, area, petugas).
+              Ambil 1 foto kondisi area yang sudah rapi untuk diverifikasi oleh Supervisor (Pasek).
             </p>
           </div>
           <button
             @click="openReadyPhotoCamera"
-            class="shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow transition"
+            class="shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow transition active:scale-95"
             :class="readyPhotoUrl ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'"
           >
             <Camera class="w-4 h-4" />
@@ -263,29 +291,29 @@ const handleSaveArea = () => {
         <div v-if="readyPhotoUrl" class="mt-3 relative rounded-xl overflow-hidden border border-slate-700 max-h-36">
           <img :src="readyPhotoUrl" alt="Ready Photo" class="w-full h-36 object-cover" />
           <div class="absolute bottom-1 right-2 px-2 py-0.5 rounded bg-black/70 text-emerald-400 text-[10px] font-mono">
-            READY PROOF SAVED
+            BUKTI FOTO TERSIMPAN ✓
           </div>
         </div>
       </div>
 
-      <!-- Warning if Ready-to-Use key item fails -->
-      <div v-if="!areaMetrics.isReady" class="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-3.5 text-xs text-rose-200 flex items-start gap-2.5">
+      <!-- Warning if Ready-to-Use key item fails or issues marked -->
+      <div v-if="areaMetrics.zeroCount > 0" class="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-3.5 text-xs text-rose-200 flex items-start gap-2.5">
         <AlertTriangle class="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
         <div>
-          <p class="font-bold text-rose-300">Status Area: TIDAK SIAP</p>
+          <p class="font-bold text-rose-300">{{ areaMetrics.zeroCount }} Item Dilaporkan Mengalami Kendala</p>
           <p class="text-[11px] text-rose-200 mt-0.5">
-            Ditemukan item bernilai 0 (Kotor) atau item kunci Ready-to-Use belum terpenuhi. Tiket temuan akan dibuat otomatis.
+            Kendala fisik otomatis dicatat untuk ditinjau oleh Supervisor (Pasek) dan diteruskan ke teknisi.
           </p>
         </div>
       </div>
 
-      <!-- Sections & Items List -->
+      <!-- Sections & Task Checklist Items List -->
       <div
         v-for="section in area.sections"
         :key="section.id"
         class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm"
       >
-        <!-- Section Header with "Semua Sesuai (2)" button -->
+        <!-- Section Header with "Centang Semua Selesai" button -->
         <div class="p-3.5 bg-slate-900/90 border-b border-slate-800/80 flex items-center justify-between gap-2">
           <button
             @click="collapsedSections[section.id] = !collapsedSections[section.id]"
@@ -296,7 +324,7 @@ const handleSaveArea = () => {
             </span>
             <div>
               <h4 class="font-bold text-xs text-white">{{ section.name }}</h4>
-              <p class="text-[10px] text-slate-400">{{ getSectionItems(section).length }} item inspeksi</p>
+              <p class="text-[10px] text-slate-400">{{ getSectionItems(section).length }} tugas checklist</p>
             </div>
             <component
               :is="collapsedSections[section.id] ? ChevronDown : ChevronUp"
@@ -304,27 +332,50 @@ const handleSaveArea = () => {
             />
           </button>
 
-          <!-- 1-Tap "Semua Sesuai (2)" Button (PRD principle: exception-based inspection drops taps by 90%) -->
+          <!-- 1-Tap "Centang Semua Selesai" Button -->
           <button
-            @click.stop="markSectionAllGood(section)"
+            @click.stop="markSectionAllChecked(section)"
             class="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold flex items-center gap-1 shrink-0 transition active:scale-95"
-            title="Tandai semua item sub-bagian ini bernilai Bagus (2)"
+            title="Tandai semua item sub-bagian ini sudah selesai dikerjakan"
           >
             <CheckCircle2 class="w-3.5 h-3.5 text-emerald-400" />
-            <span>Semua Sesuai (2)</span>
+            <span>Centang Semua</span>
           </button>
         </div>
 
         <!-- Section Items (if not collapsed) -->
-        <div v-show="!collapsedSections[section.id]" class="divide-y divide-slate-800/60 p-2">
+        <div v-show="!collapsedSections[section.id]" class="divide-y divide-slate-800/60 p-1.5">
           <div
             v-for="item in getSectionItems(section)"
             :key="item.id"
-            class="p-2.5 rounded-xl transition"
-            :class="ratings[item.id] === 0 ? 'bg-rose-500/5' : ratings[item.id] === 1 ? 'bg-amber-500/5' : ''"
+            class="p-2.5 rounded-xl transition cursor-pointer select-none"
+            :class="
+              ratings[item.id] === 2
+                ? 'bg-emerald-500/10 border border-emerald-500/30'
+                : ratings[item.id] === 0
+                ? 'bg-rose-500/10 border border-rose-500/30'
+                : 'hover:bg-slate-800/60 border border-transparent'
+            "
+            @click="toggleItemChecked(item.id)"
           >
-            <div class="flex items-start justify-between gap-2 mb-2">
-              <div class="flex-1">
+            <div class="flex items-start gap-3">
+              <!-- Big Satisfying Checkbox Box (>= 48px touch target) -->
+              <div
+                class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-200 mt-0.5"
+                :class="
+                  ratings[item.id] === 2
+                    ? 'bg-emerald-500 border-emerald-400 text-white shadow-md shadow-emerald-500/30 scale-105'
+                    : ratings[item.id] === 0
+                    ? 'bg-rose-500 border-rose-400 text-white'
+                    : 'bg-slate-950 border-slate-700 text-transparent hover:border-slate-500'
+                "
+              >
+                <Check v-if="ratings[item.id] === 2" class="w-5 h-5 stroke-[3]" />
+                <AlertCircle v-else-if="ratings[item.id] === 0" class="w-5 h-5" />
+              </div>
+
+              <!-- Item Description & Badges -->
+              <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-1.5 flex-wrap">
                   <span class="text-[10px] font-mono font-bold text-slate-400">{{ item.code }}</span>
                   <span
@@ -339,104 +390,97 @@ const handleSaveArea = () => {
                   >
                     PERSEDIAAN
                   </span>
+                  <span
+                    v-if="ratings[item.id] === 2"
+                    class="text-[9px] font-bold text-emerald-400 ml-auto"
+                  >
+                    Sudah Dikerjakan ✓
+                  </span>
+                  <span
+                    v-else-if="ratings[item.id] === 0"
+                    class="text-[9px] font-bold text-rose-400 ml-auto"
+                  >
+                    Ada Kendala ⚠️
+                  </span>
                 </div>
-                <p class="text-xs font-medium text-slate-200 mt-1 leading-snug">{{ item.text }}</p>
+
+                <p
+                  class="text-xs font-semibold mt-1 leading-snug transition"
+                  :class="ratings[item.id] === 2 ? 'text-emerald-100 font-bold' : ratings[item.id] === 0 ? 'text-rose-200' : 'text-slate-200'"
+                >
+                  {{ item.text }}
+                </p>
 
                 <!-- Saved Note Preview -->
-                <p v-if="itemNotes[item.id]" class="text-[11px] text-amber-300/90 mt-1 italic flex items-center gap-1">
+                <p v-if="itemNotes[item.id]" class="text-[11px] text-amber-300 mt-1 italic flex items-center gap-1">
                   <FileText class="w-3 h-3 shrink-0" /> {{ itemNotes[item.id] }}
                 </p>
+
+                <!-- Supply stock selector if replenishment -->
+                <div v-if="item.is_supply" class="mt-2 flex gap-1.5" @click.stop>
+                  <button
+                    v-for="st in (['Cukup', 'Menipis', 'Habis'] as SupplyStatus[])"
+                    :key="st"
+                    @click="setSupplyStatus(item.id, st)"
+                    class="flex-1 py-1 px-2 rounded-lg text-[10px] font-bold border transition"
+                    :class="
+                      itemNotes[item.id]?.includes(st)
+                        ? st === 'Cukup' ? 'bg-emerald-500/25 border-emerald-500 text-emerald-300' : st === 'Menipis' ? 'bg-amber-500/25 border-amber-500 text-amber-300' : 'bg-rose-500/25 border-rose-500 text-rose-300'
+                        : 'bg-slate-800 border-slate-700 text-slate-400'
+                    "
+                  >
+                    {{ st }}
+                  </button>
+                </div>
               </div>
 
-              <!-- Note button -->
-              <button
-                @click="openNote(item.id)"
-                class="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white shrink-0 mt-0.5"
-                :class="itemNotes[item.id] ? 'text-amber-400 border border-amber-500/30' : ''"
-                title="Tambah Catatan"
-              >
-                <FileText class="w-3.5 h-3.5" />
-              </button>
+              <!-- Quick Action Icons (Catatan & Laporkan Kendala) -->
+              <div class="flex items-center gap-1 shrink-0 mt-0.5" @click.stop>
+                <button
+                  @click="markItemIssue(item.id)"
+                  class="w-7 h-7 rounded-lg flex items-center justify-center transition"
+                  :class="ratings[item.id] === 0 ? 'bg-rose-500/25 text-rose-300 border border-rose-500/40' : 'bg-slate-800 text-slate-500 hover:text-rose-400'"
+                  title="Tandai Ada Kendala Fisik"
+                >
+                  <AlertTriangle class="w-3.5 h-3.5" />
+                </button>
+
+                <button
+                  @click="openNote(item.id)"
+                  class="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white"
+                  :class="itemNotes[item.id] ? 'text-amber-400 border border-amber-500/30' : ''"
+                  title="Tambah Catatan"
+                >
+                  <FileText class="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
-            <!-- Supply quick buttons if item is replenishment stock -->
-            <div v-if="item.is_supply" class="mb-2 flex gap-1.5">
-              <button
-                v-for="st in (['Cukup', 'Menipis', 'Habis'] as SupplyStatus[])"
-                :key="st"
-                @click="setSupplyStatus(item.id, st)"
-                class="flex-1 py-1 px-2 rounded-lg text-[10px] font-bold border transition"
-                :class="
-                  itemNotes[item.id]?.includes(st)
-                    ? st === 'Cukup' ? 'bg-emerald-500/25 border-emerald-500 text-emerald-300' : st === 'Menipis' ? 'bg-amber-500/25 border-amber-500 text-amber-300' : 'bg-rose-500/25 border-rose-500 text-rose-300'
-                    : 'bg-slate-800 border-slate-700 text-slate-400'
-                "
-              >
-                {{ st }}
-              </button>
-            </div>
-
-            <!-- Big 3-Color Buttons (PRD: Nilai tanpa angka, Bagus-Hijau, Kurang-Kuning, Kotor-Merah) -->
-            <!-- Minimum height 48px-56px per PRD -->
-            <div class="grid grid-cols-3 gap-2">
-              <!-- Bagus (2) -->
-              <button
-                @click="setItemRating(item.id, 2)"
-                class="h-12 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 border"
-                :class="ratings[item.id] === 2 ? 'bg-emerald-600 border-emerald-400 text-white shadow-lg shadow-emerald-600/30' : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-700'"
-              >
-                <Check class="w-4 h-4" v-if="ratings[item.id] === 2" />
-                <span>Bagus (2)</span>
-              </button>
-
-              <!-- Kurang (1) -->
-              <button
-                @click="setItemRating(item.id, 1)"
-                class="h-12 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 border"
-                :class="ratings[item.id] === 1 ? 'bg-amber-600 border-amber-400 text-white shadow-lg shadow-amber-600/30' : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-700'"
-              >
-                <AlertTriangle class="w-4 h-4" v-if="ratings[item.id] === 1" />
-                <span>Kurang (1)</span>
-              </button>
-
-              <!-- Kotor (0) -->
-              <button
-                @click="setItemRating(item.id, 0)"
-                class="h-12 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 border"
-                :class="ratings[item.id] === 0 ? 'bg-rose-600 border-rose-400 text-white shadow-lg shadow-rose-600/30' : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:bg-slate-700'"
-              >
-                <AlertTriangle class="w-4 h-4" v-if="ratings[item.id] === 0" />
-                <span>Kotor (0)</span>
-              </button>
-            </div>
-
-            <!-- Before/After Photo section if marked 0 or 1 -->
-            <div v-if="ratings[item.id] === 0 || ratings[item.id] === 1" class="mt-2.5 p-2 bg-slate-950/70 border border-slate-800 rounded-xl">
+            <!-- Before/After Photo section if marked issue -->
+            <div v-if="ratings[item.id] === 0" class="mt-2.5 p-2 bg-slate-950/80 border border-rose-500/30 rounded-xl" @click.stop>
               <div class="flex items-center justify-between mb-1.5">
-                <span class="text-[10px] font-bold text-amber-400 flex items-center gap-1">
-                  <Camera class="w-3 h-3" /> Foto Bukti Masalah (Sebelum / Sesudah)
+                <span class="text-[10px] font-bold text-rose-400 flex items-center gap-1">
+                  <Camera class="w-3 h-3" /> Foto Bukti Kendala (Sebelum / Sesudah)
                 </span>
-                <span class="text-[9px] text-slate-400">Wajib untuk nilai 0/1</span>
+                <span class="text-[9px] text-slate-400">Untuk pemeriksaan Supervisor</span>
               </div>
 
               <div class="grid grid-cols-2 gap-2">
-                <!-- Foto Sebelum -->
                 <button
                   @click="activeCameraItemId = item.id; cameraModalMode = 'before'; showCamera = true"
-                  class="py-2 px-2.5 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1.5 border"
+                  class="py-1.5 px-2 rounded-lg text-[10px] font-semibold flex items-center justify-center gap-1 border"
                   :class="itemPhotos[item.id]?.before ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' : 'bg-slate-800 border-slate-700 text-slate-300'"
                 >
-                  <Camera class="w-3.5 h-3.5" />
+                  <Camera class="w-3 h-3" />
                   <span>{{ itemPhotos[item.id]?.before ? '✓ Foto Sebelum' : '+ Foto Sebelum' }}</span>
                 </button>
 
-                <!-- Foto Sesudah -->
                 <button
                   @click="activeCameraItemId = item.id; cameraModalMode = 'after'; showCamera = true"
-                  class="py-2 px-2.5 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1.5 border"
+                  class="py-1.5 px-2 rounded-lg text-[10px] font-semibold flex items-center justify-center gap-1 border"
                   :class="itemPhotos[item.id]?.after ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' : 'bg-slate-800 border-slate-700 text-slate-300'"
                 >
-                  <Camera class="w-3.5 h-3.5" />
+                  <Camera class="w-3 h-3" />
                   <span>{{ itemPhotos[item.id]?.after ? '✓ Foto Sesudah' : '+ Foto Sesudah' }}</span>
                 </button>
               </div>
@@ -450,8 +494,10 @@ const handleSaveArea = () => {
     <div class="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 z-30">
       <div class="max-w-md mx-auto flex items-center gap-3">
         <div class="text-left">
-          <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Skor Area</p>
-          <p class="text-lg font-black text-emerald-400 leading-none">{{ areaMetrics.score }}%</p>
+          <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Tugas Selesai</p>
+          <p class="text-lg font-black text-emerald-400 leading-none">
+            {{ areaMetrics.checkedCount }} / {{ areaMetrics.totalItems }}
+          </p>
         </div>
 
         <button
@@ -459,7 +505,7 @@ const handleSaveArea = () => {
           class="flex-1 h-14 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/25 active:scale-95 transition"
         >
           <Check class="w-5 h-5" />
-          <span>Simpan Area & Kembali</span>
+          <span>Simpan Pekerjaan & Selesai</span>
         </button>
       </div>
     </div>
@@ -467,8 +513,8 @@ const handleSaveArea = () => {
     <!-- Camera Modal -->
     <CameraModal
       v-if="showCamera"
-      :title="cameraModalMode === 'ready' ? 'Foto Ready to Use' : cameraModalMode === 'before' ? 'Foto Sebelum Perbaikan' : 'Foto Sesudah Perbaikan'"
-      :subtitle="cameraModalMode === 'ready' ? 'Bukti Kerapian & Kebersihan' : 'Bukti Temuan & Tindakan'"
+      :title="cameraModalMode === 'ready' ? 'Foto Ready to Use' : cameraModalMode === 'before' ? 'Foto Kendala' : 'Foto Sesudah Dikerjakan'"
+      :subtitle="cameraModalMode === 'ready' ? 'Bukti Kebersihan & Kerapian' : 'Dokumentasi Lapangan'"
       :area-name="area.name"
       :officer-name="officerName"
       :slot-name="slot"
@@ -479,11 +525,11 @@ const handleSaveArea = () => {
     <!-- Note Modal -->
     <div v-if="showNoteModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
       <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-sm p-5 shadow-2xl">
-        <h4 class="font-bold text-white text-sm mb-2">Catatan Pemeriksaan Item</h4>
+        <h4 class="font-bold text-white text-sm mb-2">Catatan Tugas Lapangan</h4>
         <textarea
           v-model="tempNoteText"
           rows="3"
-          placeholder="Tuliskan catatan kondisi spesifik (mis. Baut sedikit kendor, noda oli membandel)..."
+          placeholder="Catatan pengerjaan (mis. Paving telah disapu bersih, lantai telah dipel)..."
           class="w-full p-3 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 mb-3"
         ></textarea>
         <div class="flex gap-2">

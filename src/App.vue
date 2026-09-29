@@ -345,6 +345,7 @@ const handleUpdateFinding = async (f: Finding) => {
         :area="inspectingArea"
         :slot="currentSlot"
         :officer-name="currentUser.name"
+        :user-role="currentUser.role"
         :is-full-check="currentSlot === '07.00'"
         :initial-ratings="checkpoints[currentSlot]?.area_results[inspectingArea.id]?.ratings || {}"
         :initial-notes="checkpoints[currentSlot]?.area_results[inspectingArea.id]?.item_notes || {}"
