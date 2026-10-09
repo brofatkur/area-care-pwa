@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { User, Role } from '../types';
 import { getPendingSyncQueue, processSyncQueue } from '../services/offlineQueue';
-import { Wifi, WifiOff, RefreshCw, UserCheck, Shield, ChevronDown, Check } from 'lucide-vue-next';
+import { Wifi, WifiOff, RefreshCw, UserCheck, Shield, ChevronDown, Check, Award } from 'lucide-vue-next';
 
 const props = defineProps<{
   currentUser: User;
@@ -119,19 +119,46 @@ const selectUser = (u: User, isSub?: boolean) => {
 </script>
 
 <template>
-  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 shadow-sm">
-    <div class="max-w-4xl mx-auto flex items-center justify-between">
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+    <!-- Top Authority & Trust Bar -->
+    <div class="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white py-1.5 px-3 sm:px-4 text-[10px] sm:text-[11px] border-b border-blue-900/40">
+      <div class="max-w-4xl mx-auto flex items-center justify-between gap-2">
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+          <span class="inline-flex items-center gap-1 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider shadow-xs">
+            <Award class="w-3 h-3 text-slate-950" />
+            Sejak 2004
+          </span>
+          <span class="text-slate-200 font-medium truncate">
+            <strong class="text-white font-black tracking-tight">PT Wahana Manuskrip Semesta</strong>
+            <span class="text-blue-300 mx-1">·</span>
+            <span class="text-blue-100 font-semibold">20+ Tahun Pengalaman Terpercaya</span>
+          </span>
+        </div>
+
+        <div class="hidden md:flex items-center gap-1.5 text-blue-200 text-[10px] font-medium shrink-0">
+          <Shield class="w-3 h-3 text-emerald-400" />
+          <span>Layanan Resmi & Tersumpah Terdaftar</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Navigation Bar -->
+    <div class="max-w-4xl mx-auto px-4 py-2.5 flex items-center justify-between">
       <!-- Brand & Location -->
       <div class="flex items-center gap-2.5">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-md shadow-emerald-500/20 text-white font-black text-lg">
-          AC
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-emerald-600 flex items-center justify-center shadow-md shadow-blue-500/20 text-white font-black text-xs sm:text-sm tracking-wider shrink-0 border border-white/20">
+          JT
         </div>
         <div>
-          <div class="flex items-center gap-1.5">
-            <h1 class="font-black text-sm tracking-tight text-slate-900 leading-tight">Area Care Officer</h1>
-            <span class="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">PWA</span>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <h1 class="font-black text-sm sm:text-base tracking-tight text-slate-900 leading-tight">Jakarta Translator</h1>
+            <span class="text-[9px] uppercase font-black tracking-wider px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-300">EST. 2004</span>
           </div>
-          <p class="text-[11px] text-slate-500 font-medium">care.boffice.co.id · WITA</p>
+          <p class="text-[11px] text-slate-600 font-semibold leading-tight mt-0.5 flex items-center gap-1">
+            <span>PT Wahana Manuskrip Semesta</span>
+            <span class="text-slate-400">·</span>
+            <span class="text-emerald-700 font-bold">Area Care Officer</span>
+          </p>
         </div>
       </div>
 

@@ -83,15 +83,15 @@ export async function processAndWatermarkImage(
   ctx.font = `500 ${fontSizeSub}px 'Plus Jakarta Sans', system-ui, sans-serif`;
   ctx.fillText(`👤 Petugas: ${options.officerName} | 🕒 ${dateStr} ${timeStr}`, 20, bannerY + bannerHeight * 0.80);
 
-  // GPS / Hash Stamp in top right corner
-  ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+  // Verified Trust Stamp in top right corner (Jakarta Translator Est. 2004)
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
   ctx.beginPath();
-  ctx.roundRect(targetWidth - 210, 16, 194, 34, 6);
+  ctx.roundRect(targetWidth - 250, 16, 234, 34, 6);
   ctx.fill();
 
   ctx.fillStyle = '#34d399';
-  ctx.font = `600 11px 'JetBrains Mono', monospace`;
-  ctx.fillText(`VERIFIED · care.boffice`, targetWidth - 200, 38);
+  ctx.font = `700 11px 'JetBrains Mono', monospace`;
+  ctx.fillText(`JAKARTA TRANSLATOR · 2004`, targetWidth - 240, 38);
 
   // Compress to JPEG with quality 0.75 (guarantees file size <= 300KB)
   const quality = 0.75;
