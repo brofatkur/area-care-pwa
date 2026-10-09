@@ -46,5 +46,14 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src')
     }
+  },
+  server: {
+    proxy: {
+      '/api/insforge': {
+        target: 'http://43.157.228.75:7130',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/insforge/, '/api')
+      }
+    }
   }
 });

@@ -4,6 +4,7 @@ import { User, Area, CheckpointSlot, CheckpointRecord, ShiftAttendance, ShiftSta
 import { CHECKPOINT_SLOTS } from '../data/checklistMaster';
 import { playTapSound, playSuccessChime, triggerHaptic } from '../services/audioHaptic';
 import { getLocalAttendance, saveLocalAttendance } from '../services/offlineQueue';
+import { fetchAttendanceOnline, saveAttendanceOnline } from '../services/insforge';
 import confetti from 'canvas-confetti';
 import {
   Clock,
@@ -46,9 +47,13 @@ const emit = defineEmits<{
   (e: 'openSubstituteModal'): void;
 }>();
 
+const getTodayDateStr = () => {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(new Date());
+};
+
 // Attendance & Work Timer State
 const attendance = ref<ShiftAttendance>({
-  date: '2026-09-29',
+  date: getTodayDateStr(),
   status: 'working',
   check_in_time: '06:55 WITA',
   started_timestamp: Date.now() - 3600 * 1000 * 2.5, // 2.5 hours ago default so user sees timer immediately
@@ -59,9 +64,21 @@ const nowTimestamp = ref(Date.now());
 let timerInterval: any = null;
 
 onMounted(async () => {
-  const saved = await getLocalAttendance();
-  if (saved) {
-    attendance.value = saved;
+  const today = getTodayDateStr();
+  attendance.value.date = today;
+  try {
+    const onlineAtt = await fetchAttendanceOnline(props.currentUser.id, today);
+    if (onlineAtt) {
+      attendance.value = onlineAtt;
+    } else {
+      const saved = await getLocalAttendance();
+      if (saved && saved.date === today) {
+        attendance.value = saved;
+      }
+    }
+  } catch (e) {
+    const saved = await getLocalAttendance();
+    if (saved) attendance.value = saved;
   }
   timerInterval = setInterval(() => {
     nowTimestamp.value = Date.now();
@@ -117,6 +134,7 @@ const doCheckIn = async () => {
   attendance.value.started_timestamp = Date.now();
   attendance.value.total_break_seconds = 0;
   await saveLocalAttendance(attendance.value);
+  saveAttendanceOnline(attendance.value, props.currentUser.id).catch(e => console.warn(e));
 };
 
 const doStartBreak = async () => {
@@ -125,6 +143,7 @@ const doStartBreak = async () => {
   attendance.value.status = 'on_break';
   attendance.value.break_start_timestamp = Date.now();
   await saveLocalAttendance(attendance.value);
+  saveAttendanceOnline(attendance.value, props.currentUser.id).catch(e => console.warn(e));
 };
 
 const doEndBreak = async () => {
@@ -137,6 +156,7 @@ const doEndBreak = async () => {
   attendance.value.status = 'working';
   attendance.value.break_start_timestamp = undefined;
   await saveLocalAttendance(attendance.value);
+  saveAttendanceOnline(attendance.value, props.currentUser.id).catch(e => console.warn(e));
 };
 
 const doCheckOut = async () => {
@@ -154,6 +174,7 @@ const doCheckOut = async () => {
   attendance.value.check_out_time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WITA';
   (attendance.value as any).completed_timestamp = Date.now();
   await saveLocalAttendance(attendance.value);
+  saveAttendanceOnline(attendance.value, props.currentUser.id).catch(e => console.warn(e));
 };
 
 // Slot times in WITA
@@ -161,26 +182,26 @@ const activeSlotRecord = computed(() => {
   return props.checkpoints[props.currentSlot] || null;
 });
 
+// Check if a specific area has been completed/evaluated
+const isAreaCompleted = (areaId: string): boolean => {
+  const res = activeSlotRecord.value?.area_results?.[areaId];
+  if (!res) return false;
+  return Boolean(res.ready_photo_url || (res.ratings && Object.keys(res.ratings).length > 0) || (res.score && res.score > 0));
+};
+
+const completedAreasCount = computed(() => {
+  return props.areas.filter(a => isAreaCompleted(a.id)).length;
+});
+
 // Calculate daily KPI % tugas selesai (item dinilai lengkap / item dijadwalkan * 100%)
 const dailyKpi = computed(() => {
-  let completedAreas = 0;
-  let totalAreas = props.areas.length;
-  if (!activeSlotRecord.value) return 0;
-
-  Object.values(activeSlotRecord.value.area_results).forEach(ar => {
-    if (ar.ready_photo_url && Object.keys(ar.ratings).length > 0) {
-      completedAreas++;
-    }
-  });
-
-  return Math.round((completedAreas / totalAreas) * 100);
+  if (props.areas.length === 0) return 0;
+  return Math.round((completedAreasCount.value / props.areas.length) * 100);
 });
 
 // Check if all 7 areas are ready for submission
 const isReadyToSubmit = computed(() => {
-  if (!activeSlotRecord.value) return false;
-  const results = activeSlotRecord.value.area_results;
-  return props.areas.every(a => results[a.id]?.ready_photo_url);
+  return props.areas.length > 0 && completedAreasCount.value === props.areas.length;
 });
 
 const onPrimaryAction = () => {
@@ -190,7 +211,7 @@ const onPrimaryAction = () => {
     emit('openSubmit', props.currentSlot);
   } else {
     // Open the first unfinished area directly (no QR scan needed!)
-    const firstUnfinished = props.areas.find(a => !activeSlotRecord.value?.area_results[a.id]?.ready_photo_url) || props.areas[0];
+    const firstUnfinished = props.areas.find(a => !isAreaCompleted(a.id)) || props.areas[0];
     emit('openArea', firstUnfinished);
   }
 };
@@ -500,7 +521,7 @@ const onPrimaryAction = () => {
           <p class="text-[11px] text-slate-500 font-medium">Langsung ketuk area untuk mengisi checklist</p>
         </div>
         <span class="text-xs font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg">
-          {{ Object.values(activeSlotRecord?.area_results || {}).filter(a => a.ready_photo_url).length }} / {{ areas.length }} Selesai
+          {{ completedAreasCount }} / {{ areas.length }} Selesai
         </span>
       </div>
 
@@ -515,12 +536,12 @@ const onPrimaryAction = () => {
             <div
               class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border"
               :class="
-                activeSlotRecord?.area_results[area.id]?.ready_photo_url
+                isAreaCompleted(area.id)
                   ? 'bg-emerald-100 border-emerald-300 text-emerald-700 shadow-xs'
                   : 'bg-white border-slate-300 text-slate-500'
               "
             >
-              <CheckCircle2 v-if="activeSlotRecord?.area_results[area.id]?.ready_photo_url" class="w-5 h-5 text-emerald-700" />
+              <CheckCircle2 v-if="isAreaCompleted(area.id)" class="w-5 h-5 text-emerald-700" />
               <ClipboardList v-else class="w-5 h-5 text-slate-600" />
             </div>
 
@@ -536,8 +557,8 @@ const onPrimaryAction = () => {
               </div>
               <p class="text-[11px] text-slate-500 mt-0.5 font-medium">
                 {{ area.sections.length }} sub-bagian ·
-                <span :class="activeSlotRecord?.area_results[area.id]?.ready_photo_url ? 'text-emerald-700 font-bold' : 'text-slate-500'">
-                  {{ activeSlotRecord?.area_results[area.id]?.ready_photo_url ? 'Selesai Terverifikasi ✓' : 'Siap dikerjakan' }}
+                <span :class="isAreaCompleted(area.id) ? 'text-emerald-700 font-bold' : 'text-slate-500'">
+                  {{ isAreaCompleted(area.id) ? 'Selesai Dikerjakan ✓' : 'Siap dikerjakan' }}
                 </span>
               </p>
             </div>

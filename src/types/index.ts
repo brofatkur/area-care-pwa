@@ -133,3 +133,17 @@ export interface SupplyItem {
   last_updated: string;
   updated_by: string;
 }
+
+export interface SupervisorReview {
+  id?: string;
+  checkpoint_id: string;
+  area_id?: string;
+  supervisor_id?: string;
+  supervisor_name?: string;
+  score?: number;
+  status: 'Approved' | 'Revision Requested';
+  notes?: string;
+  signature_url?: string;
+  reviewed_at?: string;
+}
+

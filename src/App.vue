@@ -10,8 +10,19 @@ import {
   getLocalSupplies,
   saveLocalSupplies,
   getLocalGamification,
-  saveLocalGamification
+  saveLocalGamification,
+  processSyncQueue
 } from './services/offlineQueue';
+import {
+  fetchCheckpointsOnline,
+  saveAreaCheckOnline,
+  submitCheckpointOnline,
+  fetchFindingsOnline,
+  saveFindingOnline,
+  fetchSuppliesOnline,
+  saveReviewOnline,
+  fetchGamificationOnline
+} from './services/insforge';
 import { playSuccessChime, triggerHaptic } from './services/audioHaptic';
 
 import Navbar from './components/Navbar.vue';
@@ -62,9 +73,13 @@ const submittingSlot = ref<CheckpointSlot | null>(null);
 const showSubstituteModal = ref(false);
 const showTour = ref(false);
 
+const getTodayDateStr = () => {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(new Date());
+};
+
 // Initialize default checkpoints data if none exists
-const initCheckpointRecords = () => {
-  const today = '2026-09-29';
+const initCheckpointRecords = (dateStr: string = getTodayDateStr()) => {
+  const today = dateStr;
   const defaultRecords: Record<string, CheckpointRecord> = {
     '07.00': {
       id: `chk_${today}_0700`,
@@ -115,7 +130,7 @@ const initCheckpointRecords = () => {
   // Seed sample initial check for 07.00 for demo convenience
   areas.value.forEach(a => {
     defaultRecords['07.00'].area_results[a.id] = {
-      scanned_at: '2026-09-29T07:12:00+08:00',
+      scanned_at: `${today}T07:12:00+08:00`,
       is_ready: true,
       score: 98,
       ready_photo_url: '/pwa-512x512.png',
@@ -129,59 +144,67 @@ const initCheckpointRecords = () => {
 };
 
 onMounted(async () => {
-  // Load IndexedDB state
-  const localCheckpoints = await getLocalCheckpoints();
-  if (Object.keys(localCheckpoints).length > 0) {
-    checkpoints.value = localCheckpoints;
-  } else {
-    initCheckpointRecords();
-  }
+  const today = getTodayDateStr();
 
-  const localFindings = await getLocalFindings();
-  if (localFindings.length > 0) {
-    findings.value = localFindings;
-  } else {
-    findings.value = [
-      {
-        id: 'find_1',
-        area_id: 'area_toilet',
-        area_name: 'Toilet Room',
-        item_name: 'Jet spray bidet toilet wanita',
-        description: 'Karet seal jet spray getas dan menetes air perlahan',
-        action_taken: 'Diteruskan ke tim teknisi plumbing untuk ganti seal',
-        finding_type: 'Teknis-berisiko',
-        status: 'Diteruskan',
-        pic: 'Tim Maintenance',
-        deadline: new Date(Date.now() + 48 * 3600 * 1000).toISOString(),
-        reported_by: 'Hendi',
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 'find_2',
-        area_id: 'area_coworking',
-        area_name: 'BOffice Coworking',
-        item_name: 'Soket colokan meja No. 4',
-        description: 'Stop kontak longgar saat dicolok charger laptop',
-        action_taken: 'Sudah dimatikan jalurnya dan dipasang tanda perbaikan',
-        finding_type: 'Teknis-berisiko',
-        status: 'Open',
-        pic: 'Teknisi Listrik',
-        deadline: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-        reported_by: 'Hendi',
-        created_at: new Date().toISOString()
+  // 1. Fetch checkpoints from Insforge online database first
+  try {
+    const onlineCheckpoints = await fetchCheckpointsOnline(today);
+    if (onlineCheckpoints && Object.keys(onlineCheckpoints).length > 0) {
+      checkpoints.value = onlineCheckpoints;
+    } else {
+      const localCheckpoints = await getLocalCheckpoints();
+      if (Object.keys(localCheckpoints).length > 0) {
+        checkpoints.value = localCheckpoints;
+      } else {
+        initCheckpointRecords(today);
       }
-    ];
+    }
+  } catch (err) {
+    const localCheckpoints = await getLocalCheckpoints();
+    if (Object.keys(localCheckpoints).length > 0) {
+      checkpoints.value = localCheckpoints;
+    } else {
+      initCheckpointRecords(today);
+    }
   }
 
-  const localSupplies = await getLocalSupplies();
-  if (localSupplies.length > 0) {
-    supplies.value = localSupplies;
+  // 2. Fetch findings from Insforge online database
+  try {
+    const onlineFindings = await fetchFindingsOnline();
+    if (onlineFindings && onlineFindings.length > 0) {
+      findings.value = onlineFindings;
+    } else {
+      findings.value = await getLocalFindings();
+    }
+  } catch (e) {
+    findings.value = await getLocalFindings();
   }
 
-  const localGamification = await getLocalGamification();
-  if (localGamification) {
-    gamification.value = localGamification;
+  // 3. Fetch supplies from Insforge online database
+  try {
+    const onlineSupplies = await fetchSuppliesOnline();
+    if (onlineSupplies && onlineSupplies.length > 0) {
+      supplies.value = onlineSupplies;
+    } else {
+      const localSupplies = await getLocalSupplies();
+      if (localSupplies.length > 0) supplies.value = localSupplies;
+    }
+  } catch (e) {}
+
+  // 4. Fetch gamification from Insforge online database
+  try {
+    const onlineGamification = await fetchGamificationOnline(currentUser.value.id);
+    if (onlineGamification) {
+      gamification.value = onlineGamification;
+    } else {
+      gamification.value = await getLocalGamification();
+    }
+  } catch (e) {
+    gamification.value = await getLocalGamification();
   }
+
+  // 5. Process offline sync queue if network available
+  processSyncQueue().catch(() => {});
 });
 
 // Handlers
@@ -260,7 +283,24 @@ const onSaveArea = async (data: {
       record.overall_score = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
     }
 
+    // Save locally
     await saveLocalCheckpoint(record);
+
+    // Save online to Insforge database immediately
+    saveAreaCheckOnline({
+      checkpointId: record.id,
+      officerId: currentUser.value.id,
+      officerName: currentUser.value.name,
+      date: record.date,
+      slot: record.slot,
+      areaId: data.areaId,
+      score: data.score,
+      isReady: data.isReady,
+      readyPhotoUrl: data.readyPhotoUrl,
+      ratings: data.ratings,
+      itemNotes: data.itemNotes,
+      itemPhotos: data.itemPhotos
+    }).catch(e => console.warn('[Insforge] saveAreaCheckOnline failed, cached locally:', e));
   }
 
   inspectingArea.value = null;
@@ -279,6 +319,17 @@ const onCheckpointSubmitted = async (data: { score: number; signatureUrl: string
     record.overall_score = data.score;
     record.signature_url = data.signatureUrl;
     await saveLocalCheckpoint(record);
+
+    // Submit online to Insforge database immediately
+    submitCheckpointOnline({
+      checkpointId: record.id,
+      officerId: currentUser.value.id,
+      date: record.date,
+      slot: record.slot,
+      score: data.score,
+      signatureUrl: data.signatureUrl,
+      pointsEarned: data.pointsEarned
+    }).catch(e => console.warn('[Insforge] submitCheckpointOnline failed, cached locally:', e));
   }
 
   // Update gamification points and streak
@@ -316,6 +367,7 @@ const handleRegisterSubstitute = (data: { name: string; phone: string; originTea
 const handleCreateFinding = async (f: Finding) => {
   findings.value.unshift(f);
   await saveLocalFinding(f);
+  saveFindingOnline(f).catch(e => console.warn('[Insforge] saveFindingOnline failed:', e));
 };
 
 const handleUpdateFinding = async (f: Finding) => {
@@ -323,7 +375,30 @@ const handleUpdateFinding = async (f: Finding) => {
   if (idx !== -1) {
     findings.value[idx] = f;
     await saveLocalFinding(f);
+    saveFindingOnline(f).catch(e => console.warn('[Insforge] saveFindingOnline failed:', e));
   }
+};
+
+const handleSaveReview = async (data: {
+  slot: CheckpointSlot;
+  status: 'Approved' | 'Revision Requested';
+  notes: string;
+  signatureUrl: string;
+  spotCheckDiff?: number;
+}) => {
+  const chk = checkpoints.value[data.slot];
+  const checkpointId = chk?.id || `chk_${getTodayDateStr()}_${data.slot.replace('.', '')}`;
+  saveReviewOnline({
+    id: `rev_${Date.now()}`,
+    checkpoint_id: checkpointId,
+    supervisor_id: currentUser.value.id,
+    supervisor_name: currentUser.value.name,
+    score: chk?.overall_score,
+    status: data.status,
+    notes: data.notes,
+    signature_url: data.signatureUrl,
+    reviewed_at: new Date().toISOString()
+  }).catch(e => console.warn('[Insforge] saveReviewOnline failed:', e));
 };
 </script>
 
@@ -404,7 +479,7 @@ const handleUpdateFinding = async (f: Finding) => {
         :areas="areas"
         :checkpoints="checkpoints"
         :supervisor="currentUser"
-        @review-saved="() => {}"
+        @review-saved="handleSaveReview"
       />
 
       <!-- TAB 5: Management Dashboard -->

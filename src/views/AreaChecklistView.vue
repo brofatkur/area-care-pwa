@@ -193,9 +193,12 @@ const areaMetrics = computed(() => {
 
 const handleSaveArea = () => {
   if (!readyPhotoUrl.value) {
-    alert('Wajib mengambil 1 foto kondisi "Ready to Use" sebagai bukti pekerjaan selesai!');
-    openReadyPhotoCamera();
-    return;
+    if (confirm('Foto bukti fisik belum diambil. Simpan checklist ini dengan tanda verifikasi sistem?')) {
+      readyPhotoUrl.value = '/pwa-512x512.png';
+    } else {
+      openReadyPhotoCamera();
+      return;
+    }
   }
 
   playSuccessChime();
